@@ -1,1 +1,141 @@
-1
+## 任务一
+### 1.在linux系统部署jdk
+![image](https://github.com/user-attachments/assets/8f24c953-fd79-4e0f-9994-5692ee778fdd)
+### 2.创建测试用例：创建一个简单的 Java 测试用例，模拟内存分配并触发 GC
+```java
+public class GCTest {
+    public static void main(String[] args) {
+        // 模拟内存分配
+        for (int i = 0; i < 300; i++) {
+            byte[] allocation = new byte[1_000_000]; // 分配 1MB 的内存
+            System.out.println("Allocated " + (i + 1) + " MB");
+            try {
+                Thread.sleep(100); // 暂停一会儿以便观察 GC
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+```
+### 3.使用不同的 GC 参数运行测试用例
+* Serial GC:java -XX:+UseSerialGC -XX:+PrintGC -XX:+PrintGCDetails -Xloggc:gc_serial.log GCTest
+* Parallel Scavenge:java -XX:+UseParallelGC -XX:+PrintGC -XX:+PrintGCDetails -Xloggc:gc_parallel.log GCTest
+* G1GC:java -XX:+UseG1GC -XX:+PrintGC -XX:+PrintGCDetails -Xloggc:gc_g1.log GCTest
+* ZGC:java -XX:+UseZGC -XX:+PrintGC -XX:+PrintGCDetails -Xloggc:gc_z.log GCTest
+* Shenandoah GC:java -XX:+UseShenandoahGC -XX:+PrintGC -XX:+PrintGCDetails -Xloggc:gc_shenandoah.log GCTest
+### 4.查看 GC 日志:运行完每个命令后，查看生成的 GC 日志文件，了解不同 GC 的各个阶段和暂停时间的差异(以G1GC、Shenandoah GC为例)
+#### cat gc_g1.log
+![image](https://github.com/user-attachments/assets/cde5d800-19d2-4d65-b821-3b5256a1f1b2)
+
+GC开始信息：[29.776s][info][gc,start ] GC(54) Pause Young (Concurrent Start) (G1 Humongous Allocation)
+- **时间戳**: `29.776s` 表示GC事件开始时的时间。
+- **GC编号**: `GC(54)` 表示这是第54次GC事件。
+- **GC类型**: `Pause Young (Concurrent Start)` 表示这是一次年轻代的GC，且是并发开始。
+- **原因**: `(G1 Humongous Allocation)` 表示此次GC是由于G1垃圾回收器检测到大对象的分配。
+
+GC任务信息：[29.776s][info][gc,task ] GC(54) Using 2 workers of 2 for evacuation
+- **工作线程**: 使用了2个工作线程来进行对象的搬迁（evacuation）。
+
+[29.777s][info][gc,phases ] GC(54) Pre Evacuate Collection Set: 0.1ms <br>
+[29.777s][info][gc,phases ] GC(54) Merge Heap Roots: 0.0ms <br>
+[29.777s][info][gc,phases ] GC(54) Evacuate Collection Set: 0.2ms<br>
+[29.777s][info][gc,phases ] GC(54) Post Evacuate Collection Set: 0.2ms<br>
+[29.777s][info][gc,phases ] GC(54) Other: 0.1ms
+- **各阶段耗时**:
+  - **Pre Evacuate Collection Set**: 预搬迁集合的时间为0.1毫秒。
+  - **Merge Heap Roots**: 合并堆根的时间为0.0毫秒。
+  - **Evacuate Collection Set**: 搬迁集合的时间为0.2毫秒。
+  - **Post Evacuate Collection Set**: 后搬迁集合的时间为0.2毫秒。
+  - **Other**: 其他操作的时间为0.1毫秒。
+
+堆状态信息：<br>
+[29.777s][info][gc,heap ] GC(54) Eden regions: 1->0(18) <br>
+[29.777s][info][gc,heap ] GC(54) Survivor regions: 0->0(3) <br>
+[29.777s][info][gc,heap ] GC(54) Old regions: 1->1 <br>
+[29.777s][info][gc,heap ] GC(54) Archive regions: 2->2 <br>
+[29.777s][info][gc,heap ] GC(54) Humongous regions: 10->0 <br>
+- **Eden regions**: 从1个Eden区减少到0个，表明所有对象都已搬迁。
+- **Survivor regions**: Survivor区保持不变，均为0。
+- **Old regions**: 老年代区域保持不变，均为1。
+- **Archive regions**: 存档区域保持不变，均为2。
+- **Humongous regions**: 从10个大对象区域减少到0个，表明大对象已成功处理。
+
+Metaspace信息:[29.777s][info][gc,metaspace] GC(54) Metaspace: 204K(384K)->204K(384K) NonClass: 197K(256K)->197K(256K) Class: 7K(128K)->7K(128K)
+- **Metaspace**: 表示元空间的使用情况，未发生变化。
+- **NonClass**: 非类的元空间使用情况。
+- **Class**: 类的元空间使用情况。
+
+GC总结信息:[29.777s][info][gc ] GC(54) Pause Young (Concurrent Start) (G1 Humongous Allocation) 11M->1M(32M) 0.688ms
+- **内存变化**: 堆内存从11MB减少到1MB，当前堆大小为32MB。
+- **总耗时**: 此次GC的总耗时为0.688毫秒。
+
+CPU使用信息:[29.777s][info][gc,cpu ] GC(54) User=0.00s Sys=0.00s Real=0.00s
+- **CPU时间**: 用户态和系统态的CPU时间均为0.00秒，表明此次GC几乎没有CPU开销。<br>
+#### cat gc_shenandoah.log
+![image](https://github.com/user-attachments/assets/c3e35ca5-2d79-4ea7-b4e0-51635ee961be)
+1. Concurrent Reset<br>
+[30.217s][info][gc,stats ] Concurrent Reset = 0.000 s (a = 166 us) (n = 2) (lvls, us = 154, 154, 154, 154, 178)
+- **Concurrent Reset**: 并发重置阶段，表示在并发标记过程中重置的一部分。
+- **时间**: 0.000秒，表示此阶段几乎没有耗时。
+- **平均时间**: `a = 166 us`，表示每次重置的平均耗时为166微秒。
+- **次数**: `n = 2`，表示此阶段发生了2次。
+- **各级耗时**: `lvls, us = 154, 154, 154, 154, 178`，表示不同级别的耗时，单位为微秒。<br>
+
+2. Pause Init Mark (G)<br>
+[30.217s][info][gc,stats ] Pause Init Mark (G) = 0.001 s (a = 296 us) (n = 2) (lvls, us = 164, 164, 164, 164, 426)
+- **Pause Init Mark (G)**: 表示在GC过程中进行的初始标记阶段（G代表全局）。
+- **时间**: 0.001秒，表示此阶段耗时。
+- **平均时间**: `a = 296 us`，每次初始标记的平均耗时为296微秒。
+- **次数**: 2次。
+- **各级耗时**: 各级耗时分别为164微秒，最后一次为426微秒。<br>
+
+3. Pause Init Mark (N)<br>
+[30.217s][info][gc,stats ] Pause Init Mark (N) = 0.000 s (a = 109 us) (n = 2) (lvls, us = 104, 104, 104, 104, 114)
+- **Pause Init Mark (N)**: 表示在GC过程中进行的初始标记阶段（N代表非全局）。
+- **时间**: 0.000秒，几乎没有耗时。
+- **平均时间**: `a = 109 us`，每次初始标记的平均耗时为109微秒。
+- **次数**: 2次。
+- **各级耗时**: 各级耗时为104微秒，最后一次为114微秒。<br>
+
+4. Update Region States<br>
+[30.217s][info][gc,stats ] Update Region States = 0.000 s (a = 67 us) (n = 2) (lvls, us = 58, 58, 58, 58, 76)
+- **Update Region States**: 更新区域状态的时间。
+- **时间**: 0.000秒。
+- **平均时间**: `a = 67 us`，每次更新的平均耗时为67微秒。
+- **次数**: 2次。
+- **各级耗时**: 各级耗时为58微秒，最后一次为76微秒。<br>
+
+5. Concurrent Mark Roots<br>
+[30.217s][info][gc,stats ] Concurrent Mark Roots = 0.001 s (a = 305 us) (n = 2) (lvls, us = 268, 268, 268, 268, 342)
+- **Concurrent Mark Roots**: 并发标记根对象的时间。
+- **时间**: 0.001秒。
+- **平均时间**: `a = 305 us`，每次标记根的平均耗时为305微秒。
+- **次数**: 2次。
+- **各级耗时**: 各级耗时为268微秒，最后一次为342微秒。<br>
+
+6. Concurrent Marking<br>
+[30.217s][info][gc,stats ] Concurrent Marking = 0.002 s (a = 1236 us) (n = 2) (lvls, us = 996, 996, 996, 996, 1458)
+- **Concurrent Marking**: 并发标记阶段的时间。
+- **时间**: 0.002秒。
+- **平均时间**: `a = 1236 us`，每次标记的平均耗时为1236微秒。
+- **次数**: 2次。
+- **各级耗时**: 各级耗时为996微秒，最后一次为1458微秒。<br>
+
+7. Pause Final Mark (G) 和 Pause Final Mark (N)<br>
+[30.217s][info][gc,stats ] Pause Final Mark (G) = 0.000 s (a = 197 us) (n = 2) (lvls, us = 188, 188, 188, 188, 205)<br>
+[30.217s][info][gc,stats ] Pause Final Mark (N) = 0.000 s (a = 160 us) (n = 2) (lvls, us = 145, 145, 145, 145, 173)<br>
+- **Pause Final Mark (G)**: 最终标记阶段（全局）。
+- **Pause Final Mark (N)**: 最终标记阶段（非全局）。
+- **时间**: 均为0.000秒，几乎没有耗时。
+- **平均时间**: 分别为197微秒和160微秒。
+- **次数**: 2次。
+- **各级耗时**: 各级耗时分别为188微秒和145微秒。<br>
+
+### 5. 比较各个 GC 的特点
+通过分析生成的日志，比较各个 GC 的特点：
+* Serial GC：适合小型应用，简单易用，但在大堆内存下可能导致较长的停顿时间。
+* Parallel Scavenge：适合多核处理器，能有效利用 CPU 资源，适合吞吐量优先的场景。
+* G1GC：适合大内存应用，能够控制停顿时间，适合需要低延迟的应用。
+* ZGC：低延迟的垃圾收集器，适合需要大内存和低停顿时间的应用。
+* Shenandoah GC：与 ZGC 类似，提供低停顿时间，适合大规模应用。
