@@ -48,8 +48,8 @@ public class TestG1GCByLRUCache {
             cache.put(key, value);
             ifObjectsInOldAge.put(key, value);
             
-            //每1万次运行 查看一次老年代region中存活对象情况
-            if (i % 10000 == 0) {
+            //每10万次运行 查看一次老年代region中存活对象情况
+            if (i % 100000 == 0) {
                 System.out.println("Operations: " + i);
                 int liveObjects = countLiveObjectsInOldGen(ifObjectsInOldAge);
                 System.out.println("Live objects in old region: " + liveObjects);
