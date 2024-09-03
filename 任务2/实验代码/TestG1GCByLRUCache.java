@@ -62,13 +62,13 @@ public class TestG1GCByLRUCache {
                                    ", Estimated Memory to Free: " + gcInfoBelow50[2]);
 
                 System.out.println("old regions with liveness less than 70%");
-                long[] gcInfoBelow70 = WB.g1GetMixedGCInfo(70); // 假设我们想要获取存活率低于 50% 的区域
+                long[] gcInfoBelow70 = WB.g1GetMixedGCInfo(70); // 假设我们想要获取存活率低于70% 的区域
                 System.out.println("Total Old Regions: " + gcInfoBelow70[0] + 
                                    ", Total Memory of Old Regions: " + gcInfoBelow70[1] + 
                                    ", Estimated Memory to Free: " + gcInfoBelow70[2]);
 
                 System.out.println("old regions with liveness less than 90%");
-                long[] gcInfoBelow90 = WB.g1GetMixedGCInfo(90); // 假设我们想要获取存活率低于 50% 的区域
+                long[] gcInfoBelow90 = WB.g1GetMixedGCInfo(90); // 假设我们想要获取存活率低于 90% 的区域
                 System.out.println("Total Old Regions: " + gcInfoBelow90[0] + 
                                    ", Total Memory of Old Regions: " + gcInfoBelow90[1] + 
                                    ", Estimated Memory to Free: " + gcInfoBelow90[2]);
