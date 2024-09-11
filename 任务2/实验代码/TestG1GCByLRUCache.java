@@ -18,13 +18,13 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
- 
+
 public class TestG1GCByLRUCache {
  
     private static final WhiteBox WB = WhiteBox.getWhiteBox();
     private static final int M = 1024 * 1024;
     private static final int K = 1024;
-    
+
     public static void main(String[] args) {
         MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
         MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
@@ -41,18 +41,22 @@ public class TestG1GCByLRUCache {
         LRUCache<Integer, byte[]> cache = new LRUCache<>(cacheSize);
         Map<Integer, byte[]> ifObjectsInOldAge = new HashMap<>();
         Random random = new Random();
+        int totalObjects = 0;
 
         for (int i = 0; i < totalOperations; i++) {
             int key = random.nextInt(cacheSize);
             byte[] value = new byte[K];
             cache.put(key, value);
             ifObjectsInOldAge.put(key, value);
-            
+            totalObjects++;
+
             //每10万次运行 查看一次老年代region中存活对象情况
             if (i % 100000 == 0) {
                 System.out.println("Operations: " + i);
                 int liveObjects = countLiveObjectsInOldGen(ifObjectsInOldAge);
                 System.out.println("Live objects in old region: " + liveObjects);
+                System.out.println("Total objects: " + totalObjects);
+                System.out.printf("Old gen objects percentage: %.2f%%\n", (double)liveObjects / totalObjects * 100);
             
                 // 获取混合 GC 信息
                 long[] gcInfoBelow50 = WB.g1GetMixedGCInfo(50); // 假设我们想要获取存活率低于 50% 的区域
@@ -62,13 +66,13 @@ public class TestG1GCByLRUCache {
                                    ", Estimated Memory to Free: " + gcInfoBelow50[2]);
 
                 System.out.println("old regions with liveness less than 70%");
-                long[] gcInfoBelow70 = WB.g1GetMixedGCInfo(70); // 假设我们想要获取存活率低于70% 的区域
+                long[] gcInfoBelow70 = WB.g1GetMixedGCInfo(70); // 假设我们想要获取存活率低于 50% 的区域
                 System.out.println("Total Old Regions: " + gcInfoBelow70[0] + 
                                    ", Total Memory of Old Regions: " + gcInfoBelow70[1] + 
                                    ", Estimated Memory to Free: " + gcInfoBelow70[2]);
 
                 System.out.println("old regions with liveness less than 90%");
-                long[] gcInfoBelow90 = WB.g1GetMixedGCInfo(90); // 假设我们想要获取存活率低于 90% 的区域
+                long[] gcInfoBelow90 = WB.g1GetMixedGCInfo(90); // 假设我们想要获取存活率低于 50% 的区域
                 System.out.println("Total Old Regions: " + gcInfoBelow90[0] + 
                                    ", Total Memory of Old Regions: " + gcInfoBelow90[1] + 
                                    ", Estimated Memory to Free: " + gcInfoBelow90[2]);
@@ -78,9 +82,12 @@ public class TestG1GCByLRUCache {
         }
 
         // 最终检查
+        // 在打印老区中对象总数时，也同时打印出所有对象的总数。以了解多大占比的对象被移动到老区中了
         System.out.println("Final check:");
         int finalLiveObjects = countLiveObjectsInOldGen(ifObjectsInOldAge);
         System.out.println("Live objects in old region: " + finalLiveObjects);
+        System.out.println("Total objects: " + totalObjects);
+        System.out.printf("Old gen objects percentage: %.2f%%\n", (double)finalLiveObjects / totalObjects * 100);
     }
 
     private static int countLiveObjectsInOldGen(Map<Integer, byte[]> ifObjectsInOldAge) {
