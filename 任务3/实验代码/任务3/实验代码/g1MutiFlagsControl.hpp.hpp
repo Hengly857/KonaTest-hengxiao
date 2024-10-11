@@ -6,9 +6,9 @@
 #include "gc/g1/g1OldGenAllocationTracker.hpp"
 #include "gc/g1/g1Predictions.hpp"
 
-class G1AdaptiveMixedGcControl {
+class G1MultiFlagsAdaptiveGCControl  {
 public:
-    G1AdaptiveMixedGcControl(uintx MGCT, uintx OCRTP, uintx MGLTP,
+    G1MultiFlagsAdaptiveGCControl (uintx MGCT, uintx OCRTP, uintx MGLTP,
                               G1OldGenAllocationTracker const *old_gen_alloc_tracker,
                               G1Predictions const *predictor);
     
