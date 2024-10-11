@@ -1,6 +1,6 @@
-#include "G1AdaptiveMixedGcControl.hpp"
+#include "G1MultiFlagsAdaptiveGCControl.hpp"
 
-G1AdaptiveMixedGcControl::G1AdaptiveMixedGcControl(uintx MGCT, uintx OCRTP, uintx MGLTP,
+G1MultiFlagsAdaptiveGCControl ::G1MultiFlagsAdaptiveGCControl (uintx MGCT, uintx OCRTP, uintx MGLTP,
                                                     G1OldGenAllocationTracker const *old_gen_alloc_tracker,
                                                     G1Predictions const *predictor)
     : _mixed_gc_count_target(MGCT), 
@@ -12,7 +12,7 @@ G1AdaptiveMixedGcControl::G1AdaptiveMixedGcControl(uintx MGCT, uintx OCRTP, uint
       _garbage_rate_s(10, 0.05),
       _last_unrestrained_young_size(0) {}
 
-uintx G1AdaptiveMixedGcControl::getMixedGCCountTarget() {
+uintx G1MultiFlagsAdaptiveGCControl ::getMixedGCCountTarget() {
     if (have_enough_data_for_prediction()) {
         double pred_marking_time = predict(&_marking_times_s);
         double pred_promotion_rate = predict(&_allocation_rate_s);
@@ -34,7 +34,7 @@ uintx G1AdaptiveMixedGcControl::getMixedGCCountTarget() {
     return _mixed_gc_count_target;
 }
 
-uintx G1AdaptiveMixedGcControl::getMixedGCLiveThresholdPercent() {
+uintx G1MultiFlagsAdaptiveGCControl ::getMixedGCLiveThresholdPercent() {
     if (have_enough_data_for_prediction()) {
         double pred_garbage_rate = predict(&_garbage_rate_s);
 
@@ -53,34 +53,34 @@ uintx G1AdaptiveMixedGcControl::getMixedGCLiveThresholdPercent() {
     return _mixed_gc_live_threshold;
 }
 
-void G1AdaptiveMixedGcControl::update_allocation_info(double allocation_time_s, size_t additional_buffer_size) {
+void G1MultiFlagsAdaptiveGCControl ::update_allocation_info(double allocation_time_s, size_t additional_buffer_size) {
     assert(allocation_time_s >= 0.0, "Allocation time must be positive");
     _last_allocation_time_s = allocation_time_s;
     _allocation_rate_s.add(last_mutator_period_old_allocation_rate());
     _last_unrestrained_young_size = additional_buffer_size;
 }
 
-void G1AdaptiveMixedGcControl::update_marking_length(double marking_length_s) {
+void G1MultiFlagsAdaptiveGCControl ::update_marking_length(double marking_length_s) {
     assert(marking_length_s >= 0.0, "Marking length must be positive");
     _marking_times_s.add(marking_length_s);
 }
 
-void G1AdaptiveMixedGcControl::update_garbage_info(double allocation_time_s, size_t garbage_bytes_s) {
+void G1MultiFlagsAdaptiveGCControl ::update_garbage_info(double allocation_time_s, size_t garbage_bytes_s) {
     assert(allocation_time_s >= 0.0, "Allocation time must be positive");
     _last_allocation_time_s = allocation_time_s;
     _garbage_rate_s.add(garbage_bytes_s / _last_allocation_time_s);
 }
 
-bool G1AdaptiveMixedGcControl::have_enough_data_for_prediction() const {
+bool G1MultiFlagsAdaptiveGCControl ::have_enough_data_for_prediction() const {
     return ((size_t)_marking_times_s.num() >= 3) &&
            ((size_t)_allocation_rate_s.num() >= 3);
 }
 
-double G1AdaptiveMixedGcControl::predict(TruncatedSeq const* seq) const {
+double G1MultiFlagsAdaptiveGCControl ::predict(TruncatedSeq const* seq) const {
     return _predictor->predict_zero_bounded(seq);
 }
 
-double G1AdaptiveMixedGcControl::last_mutator_period_old_allocation_rate() const {
+double G1MultiFlagsAdaptiveGCControl ::last_mutator_period_old_allocation_rate() const {
     assert(_last_allocation_time_s > 0, "Invalid last allocation time");
     return _old_gen_alloc_tracker->last_period_old_gen_growth() / _last_allocation_time_s;
 }
