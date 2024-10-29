@@ -1,4 +1,5 @@
 # KonaTest-hengxiao<br>
+## 赛会地址:https://github.com/Tencent/OpenSourceTalent/issues/46
 **实验环境**：Linux 5.10.134-17.2.al8.x86_64 (amd64)<br>
 **JDK版本**：TencentKona-17.0.11<br>
 **Jtreg版本**：jtreg 7.4<br>
